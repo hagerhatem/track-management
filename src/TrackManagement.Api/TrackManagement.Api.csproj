@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>cea89e7e-f210-4b49-9577-7c80aa4f8ea5</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrackManagement.Application\TrackManagement.Application.csproj" />
+    <ProjectReference Include="..\TrackManagement.Infrastructure\TrackManagement.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
