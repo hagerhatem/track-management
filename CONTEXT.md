@@ -6,7 +6,7 @@ A backend + frontend for a MENA media-tech company that distributes music conten
 and the distribution of each track to one or more DSPs.
 
 ## Stack
-- Backend: .NET 8 Web API, EF Core + SQL Server, FluentValidation, JWT Bearer
+- Backend: .NET 9 Web API (net9.0), EF Core + SQL Server, FluentValidation, JWT Bearer
 - Frontend: Angular (standalone components) in /frontend/track-ui
 - Structure: src/TrackManagement.{Domain,Application,Infrastructure,Api}
 
