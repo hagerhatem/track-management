@@ -1,0 +1,35 @@
+<h1>Tracks</h1>
+
+<div class="toolbar">
+  <label for="status-filter">Status</label>
+  <select id="status-filter" (change)="onFilterChange($any($event.target).value)">
+    <option value="">All</option>
+    @for (s of statuses; track s) {
+      <option [value]="s">{{ s }}</option>
+    }
+  </select>
+</div>
+
+@if (loading()) {
+  <p class="message">Loading tracks...</p>
+} @else if (error()) {
+  <p class="message error">Could not load tracks. Please try again later.</p>
+} @else if (tracks().length === 0) {
+  <p class="message">No tracks found.</p>
+} @else {
+  <table>
+    <thead>
+      <tr><th>Title</th><th>Artist</th><th>Genre</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      @for (t of tracks(); track t.id) {
+        <tr class="row" tabindex="0" (click)="open(t.id)" (keydown.enter)="open(t.id)">
+          <td>{{ t.title }}</td>
+          <td>{{ t.artistName }}</td>
+          <td>{{ t.genre }}</td>
+          <td><span [class]="badgeClass(t.status)">{{ t.status }}</span></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

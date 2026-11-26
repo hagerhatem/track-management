@@ -209,3 +209,40 @@
 - curl: GET /api/tracks returns the seeded tracks, status=Distributed returns 4, genre=mahraganat (lower case) returns 1, GET /api/tracks/1 returns the artist without email and 3 distributions.
 - Production run with temporary environment variables: no seeding log and the database TrackManagementProdCheck was not created.
 - Not tested: seeding a database that has some tables filled, concurrent first starts, and the seeder failing mid-way.
+
+## Phase 7
+
+### (a) What was generated
+- frontend/track-ui: Angular 21 app (standalone components, no UI library, plain CSS). `environment.ts` with apiUrl, TypeScript interfaces matching the API DTOs, `TrackService` (getTracks with optional status via HttpParams, getTrack), `TrackListComponent` (table, status filter, loading/error/empty states, row click to detail) and `TrackDetailComponent` (track info, distributions table, empty state, 404 message).
+- Api: `Cors/FrontendCorsExtensions.cs`, `UseCors` in `Program.cs`, and `Cors:AllowedOrigins` in `appsettings.Development.json`.
+
+### (b) Security-relevant choices
+- CORS allows only the origins listed in `Cors:AllowedOrigins` (http://localhost:4200). Wildcards are filtered out and startup fails if no explicit origin is configured. No AllowAnyOrigin.
+- The CORS policy allows only the GET method and the Content-Type and Authorization headers, because the UI is read-only.
+- The UI has no authentication and never calls the protected endpoints.
+- All API text is rendered with Angular interpolation; there is no innerHTML.
+- The status filter is sent with HttpParams, not string concatenation. The list component only accepts values from its own status list.
+- The UI shows generic error messages and does not display raw API error bodies. The detail page validates the id before calling the API.
+
+### (c) Assumptions and trade-offs
+- CORS is configured only in appsettings.Development.json, so outside Development the API fails at startup unless Cors__AllowedOrigins__0 is set. This is intentional (fail loudly) but means Production needs explicit configuration.
+- The API URL (http://localhost:5288) is hard-coded in environment.ts; there is no separate production environment file.
+- submittedAt arrives from the API without a Z suffix (Phase 3 behavior), so the date pipe shows it as local time. Not fixed.
+- `npm install` failed with an npm internal error (edgesOut) in this project. `--legacy-peer-deps` fixed it and is stored in frontend/track-ui/.npmrc. The root cause was not found; I suspected the spaces in the project path, which I did not confirm.
+- Angular CLI generated app.spec.ts tested the placeholder page; it was replaced by a minimal creation test. No unit tests were run.
+- No pagination on the list, same as the API.
+
+### (d) Things the AI got wrong that I fixed
+- It named the CORS extension class CorsServiceCollectionExtensions, which clashes with a class in ASP.NET, causing build error CS0104. I renamed it to FrontendCorsExtensions.
+- It first gave a mkdir for the Cors folder after the command that writes into it, so the first write failed.
+- It guessed that the npm error came from the project path, and the first two suggested fixes did not work; only --legacy-peer-deps did.
+- Four Auth files (JwtOptions, DemoCredentialsOptions, ITokenService, TokenRequest) showed as modified with 0 lines after a bad paste into the terminal. I restored them with git checkout from the last commit. The exact cause is not confirmed.
+- Its line-count estimates for several files were lower than the real counts; the files were correct.
+- The API was started with the wrong data: the user-secrets still pointed to the database with manual test data, so the UI showed those rows instead of the seed data. I switched the connection string to the seeded database.
+
+### (e) Verification
+- `dotnet build` passed with 0 errors and 0 warnings. `ng build` passed.
+- UI list with the seeded database showed all 10 seeded tracks.
+- Manual browser checks (done by me, results reported as passing): status filter, detail page of a distributed track with its distributions, a Draft track showing the empty distributions message, and /tracks/999 showing the not found message.
+- curl: request with Origin http://localhost:4200 returned 200 with Access-Control-Allow-Origin http://localhost:4200; request with Origin http://evil.example returned 200 without any access-control header.
+- Not tested: Production CORS startup failure (missing Cors:AllowedOrigins) and unit tests.

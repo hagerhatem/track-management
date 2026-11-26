@@ -1,0 +1,2 @@
+.row { cursor: pointer; }
+.row:hover, .row:focus { background: #f3f4f6; outline: none; }

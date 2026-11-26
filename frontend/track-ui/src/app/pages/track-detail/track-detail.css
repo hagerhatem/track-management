@@ -1,0 +1,4 @@
+.back { display: inline-block; margin-bottom: 16px; color: #2563eb; text-decoration: none; }
+.info { display: grid; grid-template-columns: 140px 1fr; gap: 6px 16px; margin-bottom: 24px; }
+.info dt { font-weight: 600; color: #4b5563; }
+.info dd { margin: 0; }

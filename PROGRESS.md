@@ -7,13 +7,13 @@
 - [x] Phase 4: JWT auth + dev token endpoint
 - [x] Phase 5: Distribute + Status endpoints (protected)
 - [x] Phase 6: Seed data
-- [ ] Phase 7: Angular (list + detail) + CORS
+- [x] Phase 7: Angular (list + detail) + CORS
 - [ ] Phase 8: Security review + fixes
 - [ ] Phase 9: README + DECISIONS.md
 - [ ] Phase 10: Final check + submission
 
 ## Last completed
-Phase 6: idempotent Development-only seeding (DbSeeder). Runs Migrate(), then seeds each table only if empty, with a single SaveChanges. Seeds 3 DSPs, 4 artists, 10 tracks and 17 distributions with fixed emails and ISRCs. Verified on a fresh database: counts, second run adds nothing, Phase 5 rules hold, no seeding in Production.
+Phase 7: Angular 21 UI in frontend/track-ui (track list with status filter, track detail with distributions, loading/error/empty/404 states) and CORS in the API limited to origins from Cors:AllowedOrigins (http://localhost:4200 in Development). Verified: both builds pass, the list shows the seeded data, CORS header present for the allowed origin and absent for another origin.
 
 ## Next step
-Phase 7: Angular list + detail + CORS.
+Phase 8: Security review + fixes.
