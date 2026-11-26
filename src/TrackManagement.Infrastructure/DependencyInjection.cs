@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TrackManagement.Application.Artists;
+using TrackManagement.Application.Tracks;
 using TrackManagement.Infrastructure.Persistence;
 using TrackManagement.Infrastructure.Services;
 
@@ -19,6 +20,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
         services.AddScoped<IArtistService, ArtistService>();
+        services.AddScoped<ITrackService, TrackService>();
 
         return services;
     }

@@ -75,3 +75,37 @@
 - Manual curl tests: POST valid returns 201 with `Location: /api/artists/4`; duplicate email returns 409; invalid fields return 400 with errors for name, email and country; GET returns 200; malformed JSON and wrong type return 400 `application/problem+json` with only the `body` error.
 - Identity values were consumed by earlier test runs, so the first artist id is not 1.
 EOF
+
+
+## Phase 3
+
+### (a) What was generated
+- Application: `CreateTrackRequest` (no Status field), `TrackListItemResponse`, `TrackDetailResponse` (+ artist and distribution DTOs), `TrackFilter`, `ITrackService`, `IsrcNormalizer`, `CreateTrackRequestValidator`.
+- Infrastructure: `TrackService` (create, filtered list, details). Registered in both DI files.
+- Api: thin `TracksController` (POST 201 + Location, GET list with query filters, GET by id).
+
+### (b) Security-relevant choices
+- The create DTO has no Status property, so a client-supplied status is ignored; tracks always start as Draft (verified: a request with `"status":"Distributed"` produced a Draft track).
+- Track details return artist id, name and country only; the artist email is not exposed.
+- ISRC is normalized (trim, remove dashes/spaces, upper case) before validation and the duplicate check, then validated against the CONTEXT.md format.
+- The unique-index violation on Isrc (SQL errors 2601/2627) is mapped to 409, so a concurrent duplicate does not become a 500.
+- An invalid status filter returns 400 listing the allowed values; numeric strings are rejected with `Enum.IsDefined`.
+- List and detail queries use projection with `Select`, so entities are never returned and no extra data is loaded.
+
+### (c) Assumptions and trade-offs
+- Release date must be between 1900-01-01 and one year from today. These bounds are my assumption, not from CONTEXT.md.
+- Genre is free text (max 100), not a fixed list. The genre filter lowercases both sides so it does not depend on the collation; this prevents index use on Genre (no index exists anyway).
+- No pagination on GET /api/tracks.
+- The duplicate-ISRC race path was implemented but not tested concurrently.
+- Create re-reads the track through GetByIdAsync, which costs one extra query.
+- Ids are sequential ints and there is no authorization on these endpoints yet (Phase 4).
+
+### (d) Things the AI got wrong that I fixed
+- The first batch of files was given as bash heredocs, which did not work reliably when pasted into my Git Bash; I created the files through VS Code instead.
+- The test commands pasted as one block were garbled by the terminal and sent no requests; I ran them from a script file instead.
+- One code comment in `TrackService` contained a wrong normalization example and was corrected.
+
+### (e) Verification
+- `dotnet build` passed with 0 errors.
+- Manual curl tests: create returns 201 with Location and Draft status; ISRC `eg-a01-24-00001` stored as `EGA012400001`; duplicate ISRC 409; unknown artist 404; invalid fields 400 with per-field errors; client-sent status ignored; list, genre (case-insensitive) and artist+status filters return expected rows; `status=banana` returns 400 with allowed values; unknown track id 404.
+- Details of an existing track were verified from the POST response (artist without email, empty distributions). The details endpoint with existing distributions was not tested because distribution creation comes in Phase 5.
