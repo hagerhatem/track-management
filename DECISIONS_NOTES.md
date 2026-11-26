@@ -129,7 +129,7 @@ EOF
 - No rate limiting or lockout on the token endpoint (Development only).
 - Role claim "Admin" is issued but no policy uses it yet.
 - Non-Development environments have no way to get a token; acceptable for this take-home.
-- The Production 404 check: <tested / not tested>.
+- The Production 404 check: tested with ASPNETCORE_ENVIRONMENT=Production, the token endpoint returned 404.
 - JwtBearer rejection of bad tokens is not tested until endpoints are protected (Phase 5).
 
 ### (d) Things the AI got wrong that I fixed
