@@ -14,13 +14,14 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
-                "Connection string 'DefaultConnection' is not configured. " +
+                "Connection string DefaultConnection is not configured. " +
                 "Set it in appsettings.json, user-secrets or the ConnectionStrings__DefaultConnection env var.");
 
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
         services.AddScoped<IArtistService, ArtistService>();
         services.AddScoped<ITrackService, TrackService>();
+        services.AddScoped<ITrackWorkflowService, TrackWorkflowService>();
 
         return services;
     }

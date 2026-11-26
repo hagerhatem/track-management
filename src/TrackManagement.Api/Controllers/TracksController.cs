@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TrackManagement.Application.Tracks;
 
 namespace TrackManagement.Api.Controllers;
@@ -8,10 +9,12 @@ namespace TrackManagement.Api.Controllers;
 public class TracksController : ControllerBase
 {
     private readonly ITrackService _tracks;
+    private readonly ITrackWorkflowService _workflow;
 
-    public TracksController(ITrackService tracks)
+    public TracksController(ITrackService tracks, ITrackWorkflowService workflow)
     {
         _tracks = tracks;
+        _workflow = workflow;
     }
 
     [HttpPost]
@@ -40,4 +43,24 @@ public class TracksController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TrackDetailResponse>> GetById(int id, CancellationToken cancellationToken) =>
         Ok(await _tracks.GetByIdAsync(id, cancellationToken));
+
+    [HttpPost("{id:int}/distribute")]
+    [Authorize]
+    [ProducesResponseType(typeof(IReadOnlyList<TrackDistributionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<IReadOnlyList<TrackDistributionResponse>>> Distribute(int id, DistributeTrackRequest request, CancellationToken cancellationToken) =>
+        Ok(await _workflow.DistributeAsync(id, request, cancellationToken));
+
+    [HttpPatch("{id:int}/status")]
+    [Authorize]
+    [ProducesResponseType(typeof(TrackDetailResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<TrackDetailResponse>> UpdateStatus(int id, UpdateTrackStatusRequest request, CancellationToken cancellationToken) =>
+        Ok(await _workflow.UpdateStatusAsync(id, request, cancellationToken));
 }

@@ -139,3 +139,36 @@ EOF
 
 ### (e) Verification
 - `dotnet build` passed. curl: bad credentials 401, empty body 401, good credentials 200 with Bearer token (1 hour), Swagger UI 200, artists endpoint still open.
+
+
+## Phase 5
+
+### (a) What was generated
+- Application: `DistributeTrackRequest`, `UpdateTrackStatusRequest`, `ITrackWorkflowService`.
+- Infrastructure: `TrackWorkflowService` with the workflow rules documented in a comment at the top; registered in DI. It is a separate service so `TrackService` was not rewritten.
+- Api: `TracksController` got `POST {id}/distribute` and `PATCH {id}/status`, both with `[Authorize]`. The GET endpoints and POST /api/tracks stay public.
+
+### (b) Security-relevant choices
+- Both workflow endpoints require a valid JWT. Verified: no token, and a garbage token, both return 401.
+- Distribute validates input before touching the database (empty list, duplicates), then existence of track and DSPs, then existing distributions. Nothing is inserted on any failure (verified: a request mixing an existing DSP and a new one returned 409 and the new DSP was not added).
+- Track, distributions and the Draft to Submitted change are saved with one SaveChanges. A unique-index violation on (TrackId, DspId) from a concurrent request is mapped to 409.
+- The status value is matched by name only, so numeric strings like "1" are rejected with 400.
+- Error messages list ids and allowed values only; no internal details.
+
+### (c) Assumptions and trade-offs
+- Any valid token is enough; the Admin role is issued but not checked.
+- No API endpoint changes a distribution to Live, so Submitted to Distributed cannot be reached through the API alone. I set a distribution to Live with SQL to test it.
+- Submitted to Draft is allowed even when distributions already exist.
+- Setting the same status again (for example Draft to Draft) returns 409.
+- No optimistic concurrency on the track status, so two simultaneous status changes can overwrite each other.
+- `GET /api/tracks?status=` is case-insensitive but still accepts numeric strings through a different code path from Phase 3, while the PATCH rejects them. Small inconsistency, not fixed.
+- The DSPs were inserted manually with SQL for testing; the Phase 6 seeder must be idempotent (check by name) because DSP names are unique.
+
+### (d) Things the AI got wrong that I fixed
+- The test script paused for a manual SQL step, and the command was pasted into the script terminal instead of being run in another one, so tests 19 to 21 gave misleading results and I re-ran them by hand.
+- The first test run used DSP ids 1 and 2 that did not exist (the real ids were 3, 4, 5).
+
+### (e) Verification
+- `dotnet build` passed.
+- curl: 401 without or with a bad token; 400 for empty, duplicate, missing DSP ids and invalid status; 404 for an unknown track; 200 on distribute with Draft becoming Submitted; 409 on an existing DSP with no partial insert; all invalid transitions return 409; Submitted to Distributed returns 409 without a Live distribution and 200 with one; Distributed to Draft returns 409.
+- A Distributed track receiving an additional DSP: tested, track 3 (Distributed) accepted a distribution to a fourth DSP with 200, and repeating it returned 409.
