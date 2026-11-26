@@ -10,10 +10,10 @@
 - [x] Phase 7: Angular (list + detail) + CORS
 - [x] Phase 8: Security review + fixes
 - [x] Phase 9: README + DECISIONS.md
-- [ ] Phase 10: Final check + submission
+- [x] Phase 10: Final check + submission
 
 ## Last completed
-Phase 9: README.md and DECISIONS.md written and pushed. A fresh clone builds the API.
+Phase 10: verified a fresh clone (API build, seeding, frontend install and build). Submission document prepared with the three links.
 
 ## Next step
-Phase 10: verify the frontend and API from a fresh clone, then submit the Google Doc with the three links.
+Submit the Google Doc through the response button.
