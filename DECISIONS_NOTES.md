@@ -42,3 +42,36 @@
 - My user-secrets `DefaultConnection` points to `localhost\SQLEXPRESS`, so it overrides the committed LocalDB default and the database was created there, not on LocalDB. This confirms the override mechanism works; the LocalDB value in appsettings.json is only a fallback for machines without secrets.
 - Constraint test (inside a rolled-back transaction, tables were empty afterwards): duplicate Artist.Email, Dsp.Name, Track.Isrc and (TrackId, DspId) were each rejected with error 2601, and deleting an artist that has tracks was rejected with FK error 547.
 - The test also confirmed the unique indexes are case-insensitive (`A@TEST.COM` collided with `a@test.com`, `ega012400001` with `EGA012400001`), as noted in (c). Normalization of ISRC to upper case is still to be done in the Application layer.
+
+
+## Phase 2
+
+### (a) What was generated
+- Application: `CreateArtistRequest`, `ArtistResponse`, `IArtistService`, FluentValidation validator (name required, max 200; valid email, max 254; country required, 2 uppercase letters).
+- Infrastructure: `ArtistService` implementing `IArtistService` using `AppDbContext`.
+- Api: thin `ArtistsController` (POST returns 201 + Location, GET uses `AsNoTracking`), global exception-handling middleware returning generic ProblemDetails, and an invalid-model-state response factory that returns field-level `ValidationProblemDetails`.
+- Interfaces live in Application, implementations in Infrastructure, so Application has no EF Core dependency.
+
+### (b) Security-relevant choices
+- The global exception middleware returns generic ProblemDetails only: no stack trace, no exception message.
+- Malformed JSON and wrong-type bodies return a fixed message under the `body` key. Raw serializer text, type names and request paths are not echoed (verified with curl: malformed JSON and `"name":123` both produce the same generic 400).
+- Duplicate email returns 409 with a fixed message and does not return the existing record.
+- Validation rejects bad input before it reaches the database; the unique index on Artist.Email from Phase 1 remains the DB-level guarantee.
+
+### (c) Assumptions and trade-offs
+- Country is validated as two uppercase letters only; it is not checked against the real ISO 3166 list (e.g. `ZZ` passes). The column (max 100) from Phase 1 is wider than this rule needs.
+- Email uniqueness follows SQL Server's case-insensitive collation (confirmed in Phase 1), so `A@x.com` and `a@x.com` conflict.
+- Concurrent duplicate-email requests were not tested. If the service does not map the unique-index violation to 409, such a request would return the generic 500 instead.
+- No pagination on GET /api/artists.
+- Ids are sequential ints, so artist ids are guessable; no authorization exists yet (Phase 4).
+
+### (d) Things the AI got wrong that I fixed
+- The first version of the invalid-model-state response was missing `using Microsoft.AspNetCore.Mvc.Infrastructure;` (`ProblemDetailsFactory`), so the build failed with CS0246.
+- The first fix was written for PowerShell, but I use Git Bash. A second, `sed`-based fix was then applied on top, which duplicated the `using` line (CS0105 warning). I removed the duplicate by hand.
+- A build failed with MSB3027/MSB3021 because the API from a previous `dotnet run` was still running and locking the DLLs. Stopping it fixed the build.
+
+### (e) Verification
+- `dotnet build` passed with 0 errors after the fixes.
+- Manual curl tests: POST valid returns 201 with `Location: /api/artists/4`; duplicate email returns 409; invalid fields return 400 with errors for name, email and country; GET returns 200; malformed JSON and wrong type return 400 `application/problem+json` with only the `body` error.
+- Identity values were consumed by earlier test runs, so the first artist id is not 1.
+EOF

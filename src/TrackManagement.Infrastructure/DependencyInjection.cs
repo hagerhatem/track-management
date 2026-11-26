@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TrackManagement.Application.Artists;
 using TrackManagement.Infrastructure.Persistence;
+using TrackManagement.Infrastructure.Services;
 
 namespace TrackManagement.Infrastructure;
 
@@ -15,6 +17,8 @@ public static class DependencyInjection
                 "Set it in appsettings.json, user-secrets or the ConnectionStrings__DefaultConnection env var.");
 
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+
+        services.AddScoped<IArtistService, ArtistService>();
 
         return services;
     }
