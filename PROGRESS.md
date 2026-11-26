@@ -9,11 +9,11 @@
 - [x] Phase 6: Seed data
 - [x] Phase 7: Angular (list + detail) + CORS
 - [x] Phase 8: Security review + fixes
-- [ ] Phase 9: README + DECISIONS.md
+- [x] Phase 9: README + DECISIONS.md
 - [ ] Phase 10: Final check + submission
 
 ## Last completed
-Phase 8: security review of the API and UI. Added security headers middleware, HSTS outside Development, AllowedHosts restricted, default connection string moved to appsettings.Development.json, and the distribute and status endpoints now require the Admin role. Verified with curl.
+Phase 9: README.md and DECISIONS.md written and pushed. A fresh clone builds the API.
 
 ## Next step
-Phase 9: README + DECISIONS.md.
+Phase 10: verify the frontend and API from a fresh clone, then submit the Google Doc with the three links.
