@@ -74,7 +74,6 @@
 - `dotnet build` passed with 0 errors after the fixes.
 - Manual curl tests: POST valid returns 201 with `Location: /api/artists/4`; duplicate email returns 409; invalid fields return 400 with errors for name, email and country; GET returns 200; malformed JSON and wrong type return 400 `application/problem+json` with only the `body` error.
 - Identity values were consumed by earlier test runs, so the first artist id is not 1.
-EOF
 
 
 ## Phase 3
@@ -171,4 +170,42 @@ EOF
 ### (e) Verification
 - `dotnet build` passed.
 - curl: 401 without or with a bad token; 400 for empty, duplicate, missing DSP ids and invalid status; 404 for an unknown track; 200 on distribute with Draft becoming Submitted; 409 on an existing DSP with no partial insert; all invalid transitions return 409; Submitted to Distributed returns 409 without a Live distribution and 200 with one; Distributed to Draft returns 409.
-- A Distributed track receiving an additional DSP: tested, track 3 (Distributed) accepted a distribution to a fourth DSP with 200, and repeating it returned 409.
+
+## Phase 6
+
+### (a) What was generated
+- Infrastructure/Persistence/Seeding: `SeedData` (fixed DSPs, artists, tracks, distributions) and `DbSeeder`. `DbSeeder` is registered as scoped in `DependencyInjection.cs`.
+- `Program.cs` calls the seeder at startup only inside the `IsDevelopment()` block. The seeder runs `MigrateAsync` first, then seeds each table only if it is empty.
+- Data: 3 DSPs, 4 artists (EG, AE, LB, SA, example.com emails), 10 tracks (Pop, Hip-Hop, Mahraganat, Arabic Pop, Electronic, Shaabi; 4 Distributed, 4 Submitted, 2 Draft), 17 distributions with mixed Pending/Live/Rejected.
+- Logging reports counts only.
+
+### (b) Security-relevant choices
+- The seeder is not called outside Development. Verified in Production: the API started and no seeding or migration ran.
+- No users, passwords or secrets are seeded. All seed values are fixed and public example data (example.com emails).
+- The seed data is validated in code before any database access (ISRC format, Draft without distributions, Distributed with a Live distribution), so a bad edit fails loudly at startup.
+- All inserts go through one SaveChanges, so a failure leaves no partial data.
+
+### (c) Assumptions and trade-offs
+- DSPs and artists are seeded when their table is empty. Tracks and distributions are treated as one unit: they are seeded only if both tables are empty and every seed artist (by email) and DSP (by name) exists. Otherwise they are skipped with a warning, because a partial seed would break the Phase 5 rules.
+- A database with manual data therefore gets no tracks seeded. This follows the requirement but means the seeder cannot enrich a partly filled database.
+- Two seeded release dates (2026-12-20, 2027-01-15) are in the future relative to the current date (2026-11-26) but within the one-year limit. They are on Draft tracks; one Submitted track (2026-10-30) is in the past.
+- SubmittedAt is derived from the release date (14 days before), not from the clock, so reruns on a new database give identical data.
+- Two simultaneous first starts could both pass the empty checks; the unique indexes would make one fail. Not tested.
+- The seeder uses the same entities as the API and does not go through the services, so the workflow rules are checked by a separate validation method, not by TrackWorkflowService.
+- GET track details returns submittedAt without a Z suffix (existing Phase 3 behavior). Not changed.
+
+### (d) Things the AI got wrong that I fixed
+- It gave the GET test commands with port 7001 and https, a guess. The API listened on http://localhost:5288, so the first curl calls returned nothing.
+- It gave a launchSettings.json path relative to the wrong directory, and a command with a literal PORT placeholder that failed.
+- Its first Production test failed at startup because user-secrets are not loaded outside Development (Jwt:Key missing), so it did not prove anything about the seeder. It was repeated with temporary environment variables.
+- Its line-count estimates for DbSeeder and Program.cs were lower than the real values (153 and 45); files were correct.
+- The long printf command for these notes got a stray command pasted into it and was run twice, which duplicated the Phase 6 block and corrupted one line. I truncated the file back to the end of Phase 5 and re-appended it in short pieces.
+
+### (e) Verification
+- `dotnet build` passed with 0 errors and 0 warnings.
+- Fresh database TrackManagementSeedTest (created by Migrate): counts 3 DSPs, 4 artists, 10 tracks, 17 distributions; tracks by status Distributed 4, Draft 2, Submitted 4.
+- Second run: log showed Added 0 for every table and counts were unchanged.
+- sqlcmd rule checks returned 0 rows: Distributed without Live, Draft with distributions, Submitted without distributions, and ISRCs with wrong length, dash, lower case or wrong pattern.
+- curl: GET /api/tracks returns the seeded tracks, status=Distributed returns 4, genre=mahraganat (lower case) returns 1, GET /api/tracks/1 returns the artist without email and 3 distributions.
+- Production run with temporary environment variables: no seeding log and the database TrackManagementProdCheck was not created.
+- Not tested: seeding a database that has some tables filled, concurrent first starts, and the seeder failing mid-way.

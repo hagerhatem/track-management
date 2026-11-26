@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TrackManagement.Application.Artists;
 using TrackManagement.Application.Tracks;
 using TrackManagement.Infrastructure.Persistence;
+using TrackManagement.Infrastructure.Persistence.Seeding;
 using TrackManagement.Infrastructure.Services;
 
 namespace TrackManagement.Infrastructure;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IArtistService, ArtistService>();
         services.AddScoped<ITrackService, TrackService>();
         services.AddScoped<ITrackWorkflowService, TrackWorkflowService>();
+        services.AddScoped<DbSeeder>();
 
         return services;
     }
