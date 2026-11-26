@@ -34,3 +34,11 @@
 - No indexes on Track.Genre / Track.Status yet, even though the list endpoint filters on them; fine for small data, revisit if needed.
 - Package versions in the csproj files use floating `9.0.*`; builds are not fully reproducible. Not changed in this phase.
 - `Class1.cs` in the Application project was left untouched (outside the scope of this phase).
+
+### (d) Verification results (added after the migration was created and applied)
+- `dotnet build` passed with 0 errors after the code was applied. The AI could not compile it itself, so this was the first real compile.
+- Correction to (a): the InitialCreate migration was created by me afterwards and committed together with the code.
+- Inspected the migration and the SQL EF executed: 4 tables, 4 unique indexes, all FKs `ON DELETE NO ACTION` (Restrict), no Cascade, Isrc `varchar(12)`, Status columns `nvarchar(20)`.
+- My user-secrets `DefaultConnection` points to `localhost\SQLEXPRESS`, so it overrides the committed LocalDB default and the database was created there, not on LocalDB. This confirms the override mechanism works; the LocalDB value in appsettings.json is only a fallback for machines without secrets.
+- Constraint test (inside a rolled-back transaction, tables were empty afterwards): duplicate Artist.Email, Dsp.Name, Track.Isrc and (TrackId, DspId) were each rejected with error 2601, and deleting an artist that has tracks was rejected with FK error 547.
+- The test also confirmed the unique indexes are case-insensitive (`A@TEST.COM` collided with `a@test.com`, `ega012400001` with `EGA012400001`), as noted in (c). Normalization of ISRC to upper case is still to be done in the Application layer.

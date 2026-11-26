@@ -1,7 +1,7 @@
 # Progress
 
 - [x] Phase 0: scaffold solution + context files
-- [ ] Phase 1: Domain + EF Core (SQL Server) + initial migration — code done, migration pending (I will create it)
+- [x] Phase 1: Domain + EF Core (SQL Server) + initial migration
 - [ ] Phase 2: Artists endpoints + validation + global error handling
 - [ ] Phase 3: Tracks endpoints (create, list+filters, details)
 - [ ] Phase 4: JWT auth + dev token endpoint
@@ -13,7 +13,7 @@
 - [ ] Phase 10: Final check + submission
 
 ## Last completed
-Phase 1 code: domain entities + enums, AppDbContext + 4 EF configurations, AddInfrastructure (SQL Server), wired in Program.cs, WeatherForecast template removed. Migration NOT created yet.
+Phase 1: domain entities, AppDbContext + configurations, InitialCreate migration created and applied, constraints verified with SQL.
 
 ## Next step
-Create and review the initial migration (`InitialCreate`), apply it to LocalDB, then start Phase 2.
+Phase 2: Artists endpoints + validation + global error handling.
