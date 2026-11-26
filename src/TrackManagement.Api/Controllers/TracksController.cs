@@ -45,7 +45,7 @@ public class TracksController : ControllerBase
         Ok(await _tracks.GetByIdAsync(id, cancellationToken));
 
     [HttpPost("{id:int}/distribute")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(IReadOnlyList<TrackDistributionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -55,7 +55,7 @@ public class TracksController : ControllerBase
         Ok(await _workflow.DistributeAsync(id, request, cancellationToken));
 
     [HttpPatch("{id:int}/status")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(TrackDetailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

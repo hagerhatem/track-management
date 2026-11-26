@@ -246,3 +246,36 @@
 - Manual browser checks (done by me, results reported as passing): status filter, detail page of a distributed track with its distributions, a Draft track showing the empty distributions message, and /tracks/999 showing the not found message.
 - curl: request with Origin http://localhost:4200 returned 200 with Access-Control-Allow-Origin http://localhost:4200; request with Origin http://evil.example returned 200 without any access-control header.
 - Not tested: Production CORS startup failure (missing Cors:AllowedOrigins) and unit tests.
+
+## Phase 8
+
+### (a) What was generated
+- Review of the API, auth, error handling, configuration, git history and UI code. New `Middleware/SecurityHeadersMiddleware.cs`, changes to `Program.cs`, `appsettings.json`, `appsettings.Development.json`, and two attribute changes in `TracksController`.
+
+### (b) Security issues found and how they were handled
+- Role was issued as Admin but never checked, so any valid token could distribute or change status. Fixed: `[Authorize(Roles = "Admin")]` on both protected endpoints (touches Phase 5 code, two lines).
+- No hardening headers: added X-Content-Type-Options, X-Frame-Options, Referrer-Policy and Cache-Control no-store, and UseHsts outside Development.
+- AllowedHosts was a wildcard: set to localhost; other environments must set it explicitly.
+- A default connection string was in appsettings.json for all environments: moved to appsettings.Development.json so other environments fail at startup if it is not configured.
+- Searched code and git history for secrets: none found; only placeholder values in appsettings.Example.json and no .env, .pfx or .key files ever committed.
+- JWT validation, the dev-only token endpoint, the generic 500 response and the sanitized model-state errors were reviewed and left unchanged.
+
+### (c) Assumptions and trade-offs
+- No rate limiting or lockout on /api/auth/token. The endpoint exists only in Development, so the risk is accepted and not coded.
+- Cache-Control no-store applies to every response, including the OpenAPI document in Development.
+- Conflict and NotFound messages are returned to the client; this is safe only while those messages contain ids and names we write ourselves.
+- Every token the dev endpoint issues has the Admin role, so the role check does not separate users in practice.
+- Production needs explicit AllowedHosts, ConnectionStrings and Cors:AllowedOrigins settings, and has no way to obtain a token.
+
+### (d) Things the AI got wrong that I fixed
+- It predicted that a status change on a Draft track without distributions would return 409. Draft to Submitted is allowed without distributions, so it returned 200 and left a Submitted track with no distributions in the seed database. I reverted it through the API and re-ran the rule checks.
+- It gave estimated line counts that were off by one in several files; the files were correct.
+- It treated a curl result of 000 as a possible code problem; the API was simply not running.
+- It said the Authorize grep would show the using line; it did not, because the pattern does not match the word Authorization.
+- The test run itself broke a Phase 5 rule in the test data, which shows the workflow allows a Submitted track with no distributions. This is a rule gap from Phase 5, not fixed here.
+
+### (e) Verification
+- `dotnet build` passed with 0 errors and 0 warnings.
+- curl: the four security headers are present, a request with Host evil.example returned 400, and CORS still allows http://localhost:4200.
+- Without a token the status endpoint returns 401; with an Admin token it returns 200 (grep confirms both endpoints carry the Admin role attribute).
+- Not tested: 403 for a valid token without the Admin role, HSTS and AllowedHosts behavior in Production, and a Production start with missing settings.

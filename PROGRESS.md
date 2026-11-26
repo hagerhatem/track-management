@@ -8,12 +8,12 @@
 - [x] Phase 5: Distribute + Status endpoints (protected)
 - [x] Phase 6: Seed data
 - [x] Phase 7: Angular (list + detail) + CORS
-- [ ] Phase 8: Security review + fixes
+- [x] Phase 8: Security review + fixes
 - [ ] Phase 9: README + DECISIONS.md
 - [ ] Phase 10: Final check + submission
 
 ## Last completed
-Phase 7: Angular 21 UI in frontend/track-ui (track list with status filter, track detail with distributions, loading/error/empty/404 states) and CORS in the API limited to origins from Cors:AllowedOrigins (http://localhost:4200 in Development). Verified: both builds pass, the list shows the seeded data, CORS header present for the allowed origin and absent for another origin.
+Phase 8: security review of the API and UI. Added security headers middleware, HSTS outside Development, AllowedHosts restricted, default connection string moved to appsettings.Development.json, and the distribute and status endpoints now require the Admin role. Verified with curl.
 
 ## Next step
-Phase 8: Security review + fixes.
+Phase 9: README + DECISIONS.md.
