@@ -109,3 +109,33 @@ EOF
 - `dotnet build` passed with 0 errors.
 - Manual curl tests: create returns 201 with Location and Draft status; ISRC `eg-a01-24-00001` stored as `EGA012400001`; duplicate ISRC 409; unknown artist 404; invalid fields 400 with per-field errors; client-sent status ignored; list, genre (case-insensitive) and artist+status filters return expected rows; `status=banana` returns 400 with allowed values; unknown track id 404.
 - Details of an existing track were verified from the POST response (artist without email, empty distributions). The details endpoint with existing distributions was not tested because distribution creation comes in Phase 5.
+
+
+
+## Phase 4
+
+### (a) What was generated
+- Api: `JwtOptions`, `DemoCredentialsOptions`, `AddJwtAuthentication` extension, `ITokenService`/`TokenService`, `AuthController` (POST /api/auth/token), `OpenApiBearerTransformer`, updated `Program.cs`, `appsettings.Example.json` (placeholders only). Package added: Swashbuckle.AspNetCore.SwaggerUI.
+
+### (b) Security-relevant choices
+- No secrets in the repo: Jwt and Demo values live in user-secrets; the committed example file has placeholders only.
+- Startup fails if Jwt:Key is missing or shorter than 32 characters, or if Issuer/Audience are missing.
+- Token validation: issuer, audience, lifetime, signing key; only HS256 accepted; ClockSkew 30 seconds.
+- The token endpoint returns 404 outside Development and compares credentials with SHA-256 + `CryptographicOperations.FixedTimeEquals`, evaluating both fields every time.
+- Bad credentials return a generic 401 that does not say which field was wrong.
+
+### (c) Assumptions and trade-offs
+- The demo password I chose locally is weak; it only exists in my user-secrets.
+- No rate limiting or lockout on the token endpoint (Development only).
+- Role claim "Admin" is issued but no policy uses it yet.
+- Non-Development environments have no way to get a token; acceptable for this take-home.
+- The Production 404 check: <tested / not tested>.
+- JwtBearer rejection of bad tokens is not tested until endpoints are protected (Phase 5).
+
+### (d) Things the AI got wrong that I fixed
+- I did not specify file paths for the new files; I had to ask where they go.
+- The files were first created as empty VS stubs and the pasted code never reached disk, so the build passed while the controller and Program.cs changes were missing (endpoint returned 404). I wrote the files from the terminal instead.
+- I saved placeholder text as the demo credentials in user-secrets by mistake and reset them.
+
+### (e) Verification
+- `dotnet build` passed. curl: bad credentials 401, empty body 401, good credentials 200 with Bearer token (1 hour), Swagger UI 200, artists endpoint still open.
