@@ -272,10 +272,16 @@
 - It gave estimated line counts that were off by one in several files; the files were correct.
 - It treated a curl result of 000 as a possible code problem; the API was simply not running.
 - It said the Authorize grep would show the using line; it did not, because the pattern does not match the word Authorization.
-- The test run itself broke a Phase 5 rule in the test data, which shows the workflow allows a Submitted track with no distributions. This is a rule gap from Phase 5, not fixed here.
+- The test run itself broke a Phase 5 rule in the test data, which shows the workflow allows a Submitted track with no distributions. This was a rule gap from Phase 5; it was fixed afterwards, see (f) below.
 
 ### (e) Verification
 - `dotnet build` passed with 0 errors and 0 warnings.
 - curl: the four security headers are present, a request with Host evil.example returned 400, and CORS still allows http://localhost:4200.
 - Without a token the status endpoint returns 401; with an Admin token it returns 200 (grep confirms both endpoints carry the Admin role attribute).
 - Not tested: 403 for a valid token without the Admin role, HSTS and AllowedHosts behavior in Production, and a Production start with missing settings.
+
+### (f) Follow-up fix: Draft to Submitted gap (Phase 5 code)
+- The status endpoint allowed Draft to Submitted without any distribution, which let the API create a Submitted track with no distributions (it happened during testing). I removed that transition from `TrackWorkflowService`; Draft becomes Submitted only through the distribute endpoint, which creates the distributions in the same save.
+- The 409 message and the comment at the top of the service were updated to match.
+- Verified: PATCH Draft to Submitted returns 409 with the new message (before and after re-seeding); distribute on a Draft track still returns 200 and the track becomes Submitted. The test changed the seed data, so the seed database was dropped and re-seeded; counts 3/4/10/17 and the Phase 5 rule query returned 0 rows.
+- Not tested: Submitted to Distributed and Submitted to Draft were not re-run after this change.

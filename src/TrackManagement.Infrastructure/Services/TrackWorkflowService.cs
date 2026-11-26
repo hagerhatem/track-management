@@ -17,7 +17,7 @@ namespace TrackManagement.Infrastructure.Services;
 //   New rows are Pending with SubmittedAt = UTC now. A Draft track becomes Submitted.
 //   Everything is saved with a single SaveChanges (all or nothing).
 //   A Distributed track can still be sent to additional DSPs.
-// Status: only Draft->Submitted, Submitted->Distributed and Submitted->Draft are allowed.
+// Status: only Submitted->Distributed and Submitted->Draft are allowed (Draft->Submitted only via distribute).
 //   Distributed is final. Submitted->Distributed needs at least one Live distribution.
 //   Any other change (including the same status) gives 409.
 //   The status must be a known name; numeric strings are rejected (400).
@@ -25,7 +25,6 @@ public class TrackWorkflowService : ITrackWorkflowService
 {
     private static readonly HashSet<(TrackStatus From, TrackStatus To)> AllowedTransitions = new()
     {
-        (TrackStatus.Draft, TrackStatus.Submitted),
         (TrackStatus.Submitted, TrackStatus.Distributed),
         (TrackStatus.Submitted, TrackStatus.Draft)
     };
@@ -121,7 +120,7 @@ public class TrackWorkflowService : ITrackWorkflowService
         var current = track.Status;
         if (!AllowedTransitions.Contains((current, target)))
         {
-            throw new ConflictException($"Cannot change status from {current} to {target}. Allowed: Draft to Submitted, Submitted to Distributed, Submitted to Draft. Distributed is final.");
+            throw new ConflictException($"Cannot change status from {current} to {target}. Allowed: Submitted to Distributed, Submitted to Draft. Draft becomes Submitted only through the distribute endpoint. Distributed is final.");
         }
 
         if (target == TrackStatus.Distributed)
